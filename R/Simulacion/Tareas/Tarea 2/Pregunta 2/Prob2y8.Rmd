@@ -1,0 +1,292 @@
+---
+title: "Control2"
+author: "Adolfo Margain"
+date: "20/9/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+
+
+
+
+
+La distribución pareto del paquete VGAM es un poco distinta a la que viene en la tarea, simplemente está recorrida $\beta$ unidades. El ejercicio ya cuenta con la corrección.
+
+```{r}
+library(VGAM)
+x <- NULL; n <- 1000; alfa <- 5; beta <- 125000
+
+for(i in 1:n) 
+  x[i] <- runif(1)^(-1/alfa)*beta
+
+hist(x, prob = T, breaks=100, ylab = "densidad")
+curve(dpareto(x, scale = beta, shape = alfa), add = T, col = "red")
+```
+
+```{r message=FALSE, warning=FALSE}
+# La función de activos esperados, necesita el tiempo t y la probabilidad de incumplimiento de pago
+
+Z.act.esp <- function(t,p){
+  prima <- n * 5500
+  reclamo.esperado <- p * beta/(1 - alfa)
+  t <- as.integer(t) + 1
+  Z <- rep(0,t)
+  Z[1] <- 1e7
+  
+  for (i in 2:t) {
+    
+    if(Z[i-1] > 0){
+      Z[i] <- max(Z[i-1] + prima - reclamo.esperado,0)
+    }
+    else{
+      Z[i] <- 0
+    }
+  }
+  return(Z[t])
+}
+
+# Función de activos
+
+Z.act <- function(t,p){
+  t <- as.integer(t) + 1
+  
+  x <- NULL; n <- 1000; alfa <- 5; beta <- 125000
+  for(i in 1:(n*t)) 
+    x[i] <- runif(1)^(-1/alfa)*beta
+  
+  U <- runif(n*t)
+  reclamo <- rep(0,n*t)
+  for (i in 1:(n*t)) {
+    if(U[i] <= p)
+      reclamo[i] = x[i]
+  }
+  prima <- n * 5500
+  
+  
+  Z <- rep(0,t)
+  Z[1] <- 1e7
+  
+  for (i in 2:t) {
+    
+    if(Z[i-1] > 0){
+      Z[i] <- max(Z[i-1] + prima - sum(reclamo[(i-1)*n + 1:n])/1000,0)
+    }
+    else{
+      Z[i] <- 0
+    }
+  }
+  return(Z[t])
+}
+```
+
+
+```{r message=FALSE, warning=FALSE}
+library(dplyr)
+library(knitr)
+library(kableExtra)
+tiempo.fin <- c(rep(5,4),rep(10,4),rep(20,4))
+prob.inc.pago <- c(rep(c(0.01,0.1,0.15,0.2),3))
+Z.activo <- rep(0,12)
+for (i in 1:12) {
+  Z.activo[i] <- Z.act(tiempo.fin[i],prob.inc.pago[i])
+}
+
+dt <- data.frame("Tiempo" = tiempo.fin,
+                 "Probabilidad de incumplimiento" = prob.inc.pago,
+                 "Activo final (Z)" = Z.activo)
+
+
+dt %>%
+  kable() %>%
+  kable_styling()
+```
+
+
+
+
+
+```{r}
+# Ahora tomaremos 1000 muestras de la x y calcularemos la prob de que la empresa se vaya a bancarrota
+# en 5, 10 y 20 años calculando la Z.act[t] y tomando en el numerador casos en los que Z[t] = 0 entre
+# 1000 (casos totales)
+
+bancarrota <- rep(1,1000)
+x <- NULL; n <- 1000; alfa <- 5; beta <- 125000
+
+for (i in 1:length(bancarrota)) {
+  for(j in 1:n){ 
+    x[j] <- runif(1)^(-1/alfa)*beta
+  }
+  bancarrota[i] <- Z.act(5, .1)
+}
+
+prob.banca <- 1 - length(bancarrota[bancarrota > 0])/1000
+prob.banca
+
+```
+
+Se puede hacer el experimento con todas las $p \in \{0.01,0.1,0.15,0.2\}$ y las $T \in \{5,10,20\}$ y las probabilidad de bancarrota seguirá siendo 0 puesto que los valores que obtenemos de la X (cantidad total de reclamos) es menor a lo que se genera con las primas recibidas.
+
+Los activos Z obtienen su variabilidad de X. Por lo que la Z esperada en 5 años es: 
+```{r}
+Z.act.esp(5,.2) - 1e7
+```
+
+Toma de ganancias
+Como el programa para calcular la Z era poco eficiente dado que se calculaban n*t uniformes para simular la X, simplificamos un poco este segundo programa para calcular solamente n uniformes.
+
+¿Qué cambia? Al calcular la Z, los reclamos se mantienen "constantes" año con año, es decir, reutilizamos la muestra uniforme calculada al principio para simular los reclamos de cada año.
+
+El problema es cuando calculamos la probabilidad de bancarrota ya que llamamos a la función de Z otras n veces, es decir, se calculaban n uniformes de tamaño n*t lo que hacía muy ineficiente el programa para que al final sólo arrojara un cochino "0".
+```{r}
+Z.act.gana <- function(t,p){
+  U <- runif(n)
+  reclamo <- rep(0,n)
+  for (i in 1:n) {
+    if(U[i] <= p)
+      reclamo[i] = x[i]
+  }
+  prima <- n * 5500
+  
+  t <- as.integer(t) + 1
+  Z <- rep(0,t)
+  accionistas <- rep(0,t)
+  Z[1] <- 1e7
+  
+  for (i in 2:t) {
+    
+    if(Z[i-1] > 0){
+      Z[i] <- max(Z[i-1] + prima - sum(reclamo)/1000,0)
+    }
+    else{
+      Z[i] <- 0
+    }
+    if(Z[i] > 1e7){
+      accionistas[i] <- Z[i] - 1e7
+      Z[i] <- 1e7
+    }
+  }
+  return(c(Z[t],accionistas[t]))
+}
+```
+
+Probabilidad de irse a la quiebra con el nuevo esquema:
+
+```{r}
+bancarrota <- rep(1,1000)
+x <- NULL; n <- 1000; alfa <- 5; beta <- 125000
+
+for (i in 1:length(bancarrota)) {
+  for(j in 1:n){ 
+    x[j] <- runif(1)^(-1/alfa)*beta
+  }
+  bancarrota[i] <- Z.act.gana(5, .1)[1]
+}
+
+prob.banca <- 1 - length(bancarrota[bancarrota > 0])/1000
+prob.banca
+```
+Como en el ejemplo pasado no se perdía dinero año con año la probabilidad de bancarrota sigue siendo 0, pero las ganancias acumuladas fueron destinadas a los accionistas.
+
+```{r}
+Z.act.esp.gana <- function(t,p){
+  prima <- n * 5500
+  reclamo.esperado <- p * beta/(1 - alfa)
+  t <- as.integer(t) + 1
+  Z <- rep(0,t)
+  Z[1] <- 1e7
+  accionistas <- rep(0,t)
+  for (i in 2:t) {
+    
+    if(Z[i-1] > 0){
+      Z[i] <- max(Z[i-1] + prima - reclamo.esperado,0)
+    }
+    else{
+      Z[i] <- 0
+    }
+    if(Z[i] > 1e7){
+      accionistas[i] <- Z[i] - 1e7
+      Z[i] <- 1e7
+    }
+  }
+  return(c(Z[t],accionistas))
+}
+```
+
+Utilidades esperadas:
+```{r}
+Z.act.esp.gana(5,.2)[1] - 1e7
+```
+Que tiene sentido, puesto que todo lo que se genera se lo dan a los accionistas en este modelo. Si queremos ver cuánto dinero esperado van a acumular los accionistas, entonces:
+```{r}
+Z.act.esp.gana(5,.2)[2:6]
+```
+Finalmente, las ganancias totales para los accionistas son las siguientes:
+```{r}
+sum(Z.act.esp.gana(5,.2)[2:6])
+```
+
+
+
+
+Pregunta 8
+
+```{r}
+n <- 1000
+mu1 <- rep(0,4)
+mu2 <- 2:5
+sigma.norm <- diag(4)
+
+
+rmvn.chol <- function(n,mu,Sigma){
+  d <- length(mu)
+  Q <- chol(Sigma)
+  Z <- matrix(rnorm(n*d),nrow=n)
+  X <- Z %*% Q + matrix(mu,n,d,byrow=T)
+  X
+}
+
+X1 <- rmvn.chol(n,mu1,sigma.norm)
+X2 <- rmvn.chol(n,mu2,sigma.norm)
+
+X.fin <- .5*X1 + .5*X2
+
+
+
+k <- 12
+
+X.fin.marg1 <- NULL
+X.fin.marg2 <- NULL
+X.fin.marg3 <- NULL
+X.fin.marg4 <- NULL
+
+for (i in 1:n) {
+  U1 <- runif(n*k)
+  U2 <- runif(n*k)
+  X.fin.marg1[i]<- (sum(U1[k*(i-1) + 1:k])-6 + mu1[1]) * .5 + (sum(U2[k*(i-1) + 1:k])-6 + mu2[1])* .5
+  X.fin.marg2[i]<- (sum(U1[k*(i-1) + 1:k])-6 + mu1[2]) * .5 + (sum(U2[k*(i-1) + 1:k])-6 + mu2[2])* .5
+  X.fin.marg3[i]<- (sum(U1[k*(i-1) + 1:k])-6 + mu1[3]) * .5 + (sum(U2[k*(i-1) + 1:k])-6 + mu2[3])* .5
+  X.fin.marg4[i]<- (sum(U1[k*(i-1) + 1:k])-6 + mu1[4]) * .5 + (sum(U2[k*(i-1) + 1:k])-6 + mu2[4])* .5
+}
+hist(X.fin.marg1, breaks = 20, prob = T)
+hist(X.fin.marg2, breaks = 20, prob = T)
+hist(X.fin.marg3, breaks = 20, prob = T)
+hist(X.fin.marg4, breaks = 20, prob = T)
+
+
+```
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,142 @@
+---
+title: "Pregunta 10"
+author: "David López"
+date: "26/10/2020"
+output:
+      pdf_document: default
+      html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Este problema se enfoco en estimar el valor de una integral impropia por el método de Monte Carlo crudo.  A lo largo de su elaboración, tuvimos diversos problemas para calcular la integral. El evento que simulamos para estimar la integral resultó ser muy raro, por lo que le hicimos de dos modos el método crudo de Monte Carlo. De inicio, generamos una muestra uniforme entre $[2$x$10^{-100},-2$x$10^{-100}]$
+
+```{r}
+# Pregunta 10
+#### MONTECARLO CRUDO
+# Usamos como mínimo -2e-100 y máximo 2e+100
+
+m <- 100000;
+Y <- NULL;
+aux1 <- NULL;
+suma <- 0;
+estimacionIntegral <- 0;
+
+Y <- runif(m, -2e+100, 2e+100)
+
+for (i in 1:m){
+  aux1[i] <- log(Y[i]^2)*exp(-Y[i]^2);
+}
+
+suma <- sum(aux1);
+suma
+estimacionIntegral <- ((2e+100 - (-2e-100))/ m) * suma;
+estimacionIntegral
+```
+
+Como se mencionamos anteriormente, fue complicado que se dieran los valores del evento para estimar la integral. Por errores de aproximación, la estimación por este método es igual a cero, por lo que consideramos cambiar a un subintervalo en el cual haya más posibilidad de aciertos para estimar la integral. Se usa el intervalo $[-20000,20000].$
+
+```{r}
+#### MONTECARLO CRUDO
+# Usamos como mínimo -2e-4 y máximo 2e+4 para obtener posibles valores
+
+k <- 100000;
+Z <- NULL;
+aux2 <- NULL;
+suma2 <- 0;
+estimacionIntegral2 <- 0;
+set.seed(23);
+
+Z <- runif(k, -2e+4, 2e+4)
+for (i in 1:k){
+  aux2[i] <- log(Z[i]^2)*exp(-Z[i]^2);
+}
+
+suma2 <- sum(aux2);
+estimacionIntegral2 <- ((2e+4 - (-2e+4))/ k) * suma2;
+estimacionIntegral2
+```
+
+Calculamos la varianza de la estimación de la integral como sigue:
+
+
+```{r}
+varianza <- 0;
+varianza <- var(((2e+4 - (-2e+4))/ k) * (aux2));
+varianza
+
+```
+
+Para reducir la varianza de la integral usamos dos maneras: variables antitéticas y muestreo de importancia.
+
+
+El primero que implementamos fue por medio de variables antitéticas
+Los datos que imprimimos fueron la estimación de la integral y de su varianza, respectivamente.
+
+```{r}
+X <- NULL;
+estIntegralVarAnti <- 0;
+varAnti <- NULL;
+
+
+for (i in 1:k){
+  X[i] <- -2e+4 + (2e+4 - Z[i]);
+  varAnti[i] <- log(Z[i]^2)*exp(-Z[i]^2);
+}
+
+sumaAux <- sum(aux2[1:k/2] + varAnti[1:k/2]);
+estIntegralVarAnti <- ((2e+4 - (-2e+4))/ k) * sumaAux;
+estIntegralVarAnti
+```
+
+Luego, obtuvimos su varianza y observamos que, en efecto, fue menor a la varianza de la primera estimación de la integral.
+```{r}
+#Varianza con variable antitética
+varAnt <- 0;
+varAnt <- var(((2e+4 - (-2e+4))/ k) * (aux2[1:k/2] + varAnti[1:k/2]));
+varAnt 
+```
+El segundo método de reducción de varianza fue por medio del muestreo de importancia. Obtuvimos el valor estimado de la importancia de muestreo y la estimación de la integral como sigue:
+
+```{r}
+#Segunda forma de reducción de varianza
+#Se hace por medio del muestreo de importancia
+
+estIntegralMuestImpor <- 0;
+consEstand <- 0;
+auxEstimador <- 0;
+
+for (i in 1:k){
+  if (Z[i]<1 & Z[i]>-1){
+    auxEstimador[i] <- -exp(-Z[i]^2);
+  }
+  else{
+    auxEstimador[i] <- exp(-Z[i]^2);
+  }
+}
+
+estimadorIS <- (1/k)*sum((auxEstimador * log(Z^2))/Z);
+estimadorIS
+```
+
+Este último valor es el valor estimado del estimador del muestreo por importancia. Ahora, con la constante de estandarización y este valor se obtiene la estimación de la integral impropia.
+
+```{r}
+consEstand <- 1/sqrt(pi);
+
+estIntegralMuestImpor <- consEstand * (estimadorIS);
+estIntegralMuestImpor
+```
+
+También calculamos su varianza y verificamos que, también, es menor que la varianza de la primera simulacion que ejecutamos.
+
+```{r}
+varMuestreo <- 0;
+varMuestreo <- var((1/k)*(auxEstimador * log(Z^2))/Z);
+varMuestreo
+```
+
+
+De esta pregunta concluimos que la integración por el método crudo de Monte Carlo puede ser muy complicado para funciones impropias puesto que debemos de comparar el área de que se busca estimar con toda la que trabajamos. Para intervalos cortos, resulta ser muy efectivo; no obstante, tuvimos problema para ajustar el área de de comparación entre la zona de rechazo y la zona de aceptación. Sin embargo, logramos ajustar el problema con cambios mínimos que permiten que los cálculos no tuvieran errores de aproximación. Finalmente, logramos comprobar que se minimiza la varianza en ambos casos donde implemntamos métodos de reducción de varianza.
