@@ -1,0 +1,137 @@
+---
+title: "Segundo examen parcial Simulación"
+author: "David López"
+date: "28/10/2020"
+output:
+      pdf_document: default
+      html_document: default
+---
+
+Al inicio se presentan todas las preguntas que requirieron el uso de R para su interpretación, desarrollo y solución.
+
+## Pregunta 1
+
+En esta pregunta modelo una simulación de variables aleatorias con función de densidad Rayleigh. La hago por medio de variables antiéticas para minimizar la varianza producida en la simulación. Utilizo el siguiente modelo de variables antiéticas: $\frac{X+Y}{2}$Entonces, para ver los resultados presento un histograma de los valores obtenidos a partir de la simulación. Para ello utilizo los siguientes valores: $n=10000$ iteraciones y de parámetro de escala de la función de densidad de Rayleigh 
+$\sigma =10$.
+
+```{r}
+# Pregunta 1 parte 1
+library(VGAM)
+# Muestra aleatoria de una función de densidad Rayleigh por medio de variables antitéticas
+X <- NULL; Y <- NULL; n <- 10000; sigma <- 10; x <- NULL;
+
+for (i in 1:n){
+  aux <- runif(1,0,1);
+  X[i] <- sigma * sqrt(log(1/(1-aux)^2));
+  Y[i] <- sigma * sqrt(log(1/(aux)^2));
+  
+  x[i] <- (X[i] + Y[i])/2;
+}
+
+hist(x, prob = T, breaks=20, xlab="muestra", ylab="densidad")
+curve(drayleigh(x, scale = sigma, log = FALSE), from = 0, to = 100, add = T, col = "red")
+
+```
+
+Ahora, presento la varianza de la simulación de la muestra aleatoria por medio de variables antitéticas
+```{r}
+
+varAnti <- var(x);
+varAnti
+
+```
+
+Por otro lado, simulo la otra muestra de variables aleatorias de la misma densidad de Rayleigh con exactamente los mismos valores  $n=10000$ y $\sigma =10$, su parametro de escala. En esta ocasión, simulo dos variables aleatorias distintas e independientes entre sí y utilizo su combinación lineal de variables aleatorias dada por lo siguiente $\frac{U+V}{2}$. De esta manera, obtenemos el siguiente histograma:
+
+```{r}
+#Pregunta 1 parte 2
+
+library(VGAM)
+# Muestra aleatoria de una función de densidad Rayleigh por medio de variables independientes
+U <- NULL; V <- NULL; n <- 10000; sigma <- 10; x <- NULL;
+
+
+for (i in 1:n){
+  U[i] <- sigma * sqrt(-2 * log(runif(1,0,1)));
+  V[i] <- sigma * sqrt(-2 * log(runif(1,0,1)));
+}
+y <- (U+V)/2;
+
+hist(y, prob = T, breaks=20, xlab="muestra", ylab="densidad")
+curve(drayleigh(x, scale = sigma, log = FALSE), from = 0, to = 100, add = T, col = "green")
+
+```
+
+El histograma anterior resulta ser diferente al primero que se produjo por medio de variables antitéticas. Sin embargo, la varianza producida en esta ocasión es mayor, ya que son dos variables distintas que se utilizan para obtener su información. Aunque pueda simular una aproximación cercana a la distribución, resulta que los valores son dispersos
+```{r}
+
+varNormal <- var(y);
+varNormal
+```
+Concluimos que el método de variables antitéticas reducen en gran porcentaje la varianza de la simulación de la función de densidad. La comparación de varianzas se hace con el supuesto de que la varianza por medio de variables antitéticas es el $100$%.
+
+```{r}
+
+porcentajeVarianza <- (varAnti * 100)/varNormal;
+porcentajeVarianza
+```
+Con lo anterior, se traduce que la varianza antitética es cercana a la fracción $\frac{1}{20}=0.05$ de la varianza obtenida por medio de variables independientes entre sí.
+
+## Pregunta 5
+
+En este problema simulo una cadena de Markov que simula los ataques a los puertos de unas computadoras. Simulo de Markov dada una distribución condicional y una matriz permutación P definidas como siguen:
+
+
+$\pi=(0,0,0,0,1)$
+
+$$
+    P = \begin{bmatrix}
+        0 & 0 & 0 & 0 & 1 \\
+        0 & 8/13 & 3/13 & 1/13 & 1/13 \\
+        1/16 & 3/16 & 3/8 & 1/4 & 1/8 \\
+        0 & 1/11 & 4/11 & 5/11 & 1/11 \\
+        0 & 1/8 & 1/2 & 1/8 & 1/4 \\
+        \end{bmatrix}
+$$
+
+
+```{r pressure}
+# Pregunta 5 (Cadenas de Markov)
+
+library("markovchain")
+
+n <- 100;
+estadoInicial <- c(0,0,0,0,1);
+P <- matrix(c(0, 0, 0, 0, 1,
+              0, 8/13, 3/13, 1/13, 1/13,
+              1/16, 3/16, 3/8, 1/4, 1/8,
+              0, 1/11, 4/11, 5/11, 1/11,
+              0, 1/8, 1/2, 1/8, 1/4),
+            byrow=T, nrow=5)
+
+
+# Se denota -1 a que no hay ataques
+cadenaAtaques <- new("markovchain", states = c("80","134","139","445","-1"),
+                     transitionMatrix  = P, name = "Ataques a Puertos de computadora");
+
+estadoNveces <- function(estadoIni, numVeces, matriz){
+  estadoN <- estadoInicial* (cadenaAtaques)^numVeces;
+  estadoN;
+}
+
+estado100veces <- estadoNveces(estadoInicial, n, P);
+estado100veces;
+
+```
+
+Después de hacer la simulación, también busco cuál es la distribución estacionaria, a partir del espacio de estados de la cadena de Markov.
+
+```{r}
+
+distribucionEstacionaria <- steadyStates(cadenaAtaques); 
+distribucionEstacionaria;
+```
+
+## Pregunta 3
+
+La siguiente pregunta se escribió a mano y se adjunta en la siguiente página.

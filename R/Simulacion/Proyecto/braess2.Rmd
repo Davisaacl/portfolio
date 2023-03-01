@@ -1,0 +1,208 @@
+---
+title: "braess2"
+author: "Jordi"
+date: "12/13/2020"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r,message=F}
+library(tidyverse)
+library(kableExtra)
+```
+
+Supongamos que tenemos 4000 personas que en la mañana van de su casa a su trabajo. Pueden elegir entre la ruta $A$ y la ruta $B$, y cada ruta tiene dos tramos.
+
+Si una de ellas elige irse por la ruta $A$, entonces la distancia de ésta es igual a la distancia del tramo entre su casa y $A$, que es de $T_{A}$/100 (donde $T_{A}$ representa el número de personas que anteriormente han circulado por dicho tramo), más la distancia que hay entre $A$ y su trabajo, que es de 45.
+
+En cambio, si una de las personas elige irse por la ruta $B$, la distancia de la ruta es igual a la distancia del tramo entre su casa y $B$, que es 45, más la distancia que hay entre $B$ y su trabajo, que es $T_{B}$/100.
+
+La persona número 1 sale de su casa a las 5 de la mañana (cuando no hay tráfico aún) y la persona 4000 sale a las 11 de la mañana (cuando el tráfico es más pesado), es decir, el número de la persona está directamente relacionado con el tiempo de trayecto que le toma ir al trabajo (entre mayor sea su número, es más probable que le tome más tiempo ir al trabajo, pero también depende de la ruta que tome).
+
+```{r}
+# Se crea la matriz de distancias; cada renglón representa a una persona y las columnas son el tiempo total de trayecto que les toma ir de de su casa a su trabajo según el día.
+DIST = matrix(rep(NA,8*4000),ncol=8)
+colnames(DIST) = c("dia_1","ruta_dia_1",
+                   "dia_2","ruta_dia_2",
+                   "dia_3","ruta_dia_3",
+                   "dia_4","ruta_dia_4")
+```
+
+## Día 1
+
+```{r}
+set.seed(10)
+coches_A = 1
+coches_B = 1
+x1 = rep(NA,4000) # distancia día 1
+y1 = rep(NA,4000) # ruta día 1
+
+for (i in 1:4000){
+  nodo = sample(c(1,2),1,prob=c(0.5,0.5))
+  if (nodo == 1){
+    dist = (coches_A / 100) + 45
+    coches_A = coches_A + 1
+  }
+  else{
+    dist = 45 + (coches_B / 100)
+    coches_B = coches_B + 1
+  }
+  x1[i] = dist
+  y1[i] = nodo
+}
+xx = x1 # la distancia del día 1 será comparada más tarde para decidir los cambios de ruta de los días posteriores
+DIST[,1] = xx
+DIST[,2] = y1
+```
+
+Promedio y tiempo máximo del día 1:
+
+```{r}
+mean(xx)
+max(xx)
+```
+
+## Día 2
+
+```{r}
+set.seed(10)
+coches_A = 1
+coches_B = 1
+x2 = rep(NA,4000) # distancia día 2
+y2 = rep(NA,4000) # ruta día 2
+
+for (i in 1:4000){
+  if (y1[i] == 1){
+    dist = (coches_A / 100)
+    coches_A = coches_A + 1
+    nodo = sample(c(3,4),1,prob=c(0.5,0.5))
+    if (nodo == 3){
+      dist = dist + 45
+      y2[i] = 3
+    }
+    else{
+      dist = dist + (coches_B /100)
+      coches_B = coches_B + 1
+      y2[i] = 4
+    }
+  }
+  else{
+    dist = 45 + (coches_B / 100)
+    coches_B = coches_B + 1
+    y2[i] = 2
+  }
+  x2[i] = dist
+}
+y2[1] = 4
+DIST[,3] = x2
+DIST[,4] = y2
+```
+
+Promedio y tiempo máximo del día 2:
+
+```{r}
+mean(x2)
+max(x2)
+```
+
+## Día 3 y 4
+
+```{r}
+set.seed(10)
+y3 = y2
+m = 5
+
+for (k in 1:2){
+  
+  x3 = rep(NA,4000)
+  coches_A = 1
+  coches_B = 1
+  
+  for (i in 1:4000){
+    if (x2[i] > x1[i]){
+      y3[i] = 4
+      dist = (coches_A + coches_B) / 100
+      coches_A = coches_A + 1
+      coches_B = coches_B + 1
+    }
+    else{
+      if (y2[i]==2){
+        y3[i] = 2
+        dist = 45 + (coches_B / 100)
+        coches_B = coches_B + 1
+      }
+      if (y2[i]==3){
+        y3[i] = 3
+        dist = (coches_A / 100) + 45
+        coches_A = coches_A + 1
+      }
+      if (y2[i]==4){
+        y3[i] = 4
+        dist = (coches_A + coches_B) / 100
+        coches_A = coches_A + 1
+        coches_B = coches_B + 1
+      }
+    }
+    x3[i] = dist
+  }
+  DIST[,m] = x3
+  DIST[,m+1] = y3
+  m = m+2
+  x1 = x2
+  x2 = x3
+  y2 = y3
+}
+
+# DIFERENCIA ENTRE MATRIZ Y DATA FRAME: LA MATRIZ TIENE TODAS LAS ENTRADAS DE UN MISMO TIPO DE VARIABLE, EL DATA FRAME NO.
+DIST = data.frame(DIST)
+
+for (i in 1:4000){
+  for (k in seq(2,8,2)){
+    if (DIST[i,k]==1){
+      DIST[i,k] = "A"
+    }
+    if (DIST[i,k]==2){
+      DIST[i,k] = "B"
+    }
+    if (DIST[i,k]==3){
+      DIST[i,k] = "A"
+    }
+    if (DIST[i,k]==4){
+      DIST[i,k] = "C"
+    }
+  }
+}
+```
+
+Promedio y tiempo máximo del día 3:
+
+```{r}
+mean(DIST[,5])
+max(DIST[,5])
+```
+
+Promedio y tiempo máximo del día 4:
+
+```{r}
+mean(DIST[,7])
+max(DIST[,7])
+```
+
+```{r}
+head(DIST)
+tail(DIST)
+```
+
+## Distribuciones de las distancias
+
+```{r}
+hist(DIST[,1],breaks=15,col="steelblue",main="Día 1",xlab="Tiempo de trayecto",ylab="Frecuencia")
+hist(DIST[,3],col="steelblue",main="Día 2",xlab="Tiempo de trayecto",ylab="Frecuencia")
+hist(DIST[,5],col="steelblue",main="Día 3",xlab="Tiempo de trayecto",ylab="Frecuencia")
+hist(DIST[,7],col="steelblue",main="Día 4",xlab="Tiempo de trayecto",ylab="Frecuencia")
+```
