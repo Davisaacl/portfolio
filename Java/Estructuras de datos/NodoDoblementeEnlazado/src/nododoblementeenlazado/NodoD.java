@@ -3,44 +3,48 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package lista;
+package nododoblementeenlazado;
 
 /**
  *
  * @author edi
  */
-public class Nodo <X>{
-    private X dato;
-    private Nodo<X> sig;
+public class NodoD <T>{
+    private T dato;
+    private NodoD<T> sig;
+    private NodoD<T> ant;
     
-    public Nodo(){
+    public NodoD(){
         dato = null;
         sig = null;
-    }
-    
-    public Nodo(X d){
-        dato = d;
-        sig = null;
+        ant = null;
     }
 
-    public X getDato() {
+    public T getDato() {
         return dato;
     }
 
-    public void setDato(X dato) {
+    public void setDato(T dato) {
         this.dato = dato;
     }
 
-    public Nodo<X> getSig() {
+    public NodoD<T> getSig() {
         return sig;
     }
 
-    public void setSig(Nodo<X> sig) {
+    public void setSig(NodoD<T> sig) {
         this.sig = sig;
+    }
+
+    public NodoD<T> getAnt() {
+        return ant;
+    }
+
+    public void setAnt(NodoD<T> ant) {
+        this.ant = ant;
     }
     
     public String toString(){
         return dato.toString();
     }
-    
 }
