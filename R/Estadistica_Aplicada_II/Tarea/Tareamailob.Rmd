@@ -1,0 +1,57 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(tidyquant)
+library(tsibble)
+library(plotly)
+library(lubridate)
+```
+
+# Creamos la tsibble
+```{r}
+data <- tsibble(
+  Year = 1990:2016,
+  PNB = c(515,	534,	575,	607,	650,	705,	772,	816,	873,	964,	1016,	1103,	1213,	1359,	1473,	1598, 1783,	1991,	2250,	2508,	2732,	3053,	3166,	3406,	3765,	3998,	4209),
+  Indice= c(618.04,	691.55,	639.76,	714.81,	834.05,	910.88,	873.6,	879.12,	906,	876.72,	753.19,	884.76, 950.71,	923.88,	759.37,	802.49,	974.92,	894.63,	820.23,	844.4,	891.41,	932.92,	884.36,	1190.34,	1178.48,	1328.23,	1592.76),
+  index = Year
+)
+data
+```
+
+# Graficamos los datos x contra y
+```{r}
+data %>% ggplot(aes(x = PNB)) + geom_line(aes(y = Indice))
+```
+
+
+# Hacemos el modelo de regresion lineal
+```{r}
+reg <- data %>% 
+  model(reg_lin_simple = TSLM(Indice ~ PNB)
+        )
+reg %>%  report()
+```
+
+# Graficamos la recta ajustada
+```{r}
+data %>% ggplot(aes(x = PNB)) + geom_line(aes(y = Indice))+ geom_abline(intercept = 664.87812, slope = 0.13855, color='red')
+```
+
+
+
+# Hacemos el diagnostico de residuales
+```{r}
+reg %>% 
+  gg_tsresiduals()
+```
+
+
+# Realizamos tambien el test de portmanteu para el diagnostico de residuales
+```{r}
+augment(reg) %>% 
+  features(.resid, ljung_box)
+```

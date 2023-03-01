@@ -1,0 +1,154 @@
+---
+title: "Tarea 5"
+author: "Equipo 3"
+date: "5/6/2020"
+output: pdf_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+```{r}
+library(readxl)
+library(tidyverse)
+library(knitr)
+library(HoRM)
+```
+
+```{r}
+Datos <- read_excel("~/Desktop/Tarea_5.xlsx", 
+    skip = 2)
+
+colnames(Datos) <- c('año','x','y') 
+```
+
+## Ajuste un modelo de regresión lineal simple a los datos del siguiente cuadro, en el cual se presentan las variables Y = Indice de la Bolsa y X = Producto Nacional Bruto de un cierto país (PNB). Realice el análisis de residuos y, en particular, verifique el supuesto de nocorrelación de los errores. De existir autocorrelación, corríjala y compare los errores estándar de los coeficientes para los modelos SIN y CON corrección por autocorrelación.
+
+
+Sea el modelo de Regresión Lineal Simple: 
+
+\begin{equation}
+Y = \beta_o + \beta_1X +\epsilon
+\end{equation}
+
+done $Y = Índice$, $X = PNB$ y $\epsilon$ el vector de errores.   
+
+Utilizando el método de Mínimos Cuadrados Ordinarios y obtenemos los siguientes resultados:
+
+```{r fig.height=3, fig.width=5, fig.align='center'}
+Reg <- lm(y~x, Datos)
+ggplot(Datos, aes(x, y)) + geom_point() +  geom_smooth(method = 'lm')
+
+coeficientes <- coef(Reg)
+sum <- summary(Reg)
+
+kable(sum$coefficients)
+```
+
+Podemos observar que la ordenada al orígen es 664.87, lo cual nos indíca que el Índice de la Bolsa toma este valor cuando el PNB es cero. Asimismo podemos observar que por cada unidad que aumenta en PNB, el Índice de la Bolsa aumenta en 0.1385.
+El resultado del modelo es el siguiente:
+
+\begin{equation}
+Indice = 664.878 + 0.1386 PNB
+\end{equation}
+
+```{r fig.height=4, fig.width=5, fig.align='center'}
+plot(Datos$año,residuals(Reg), type = 'l', xlab = 'Tiempo', ylab = 'Residuos')
+abline(h =100, lty = 3)
+abline(h =-100, lty = 3)
+abline(h =0)
+```
+
+En la gráfica de Resiudos contra el Tiempo no pudimos concluir que tipo de patrón existe por lo cual se presenta a continuación el diagrama de dispersión entre los Resiudos y los Residuos retreasados un periodo.
+
+```{r fig.height=4, fig.width=5, fig.align='center'}
+Residuos <- data.frame(X1 = residuals(Reg)[-1], X2 = residuals(Reg)[-27])
+
+plot(Residuos$X1, Residuos$X2, xlab = 'Residuos t-1', ylab = 'Residuos t', pch = 19, cex = .5, main = 'Dispersión de los Resiudos')
+abline(h =0)
+abline(v =0)
+```
+
+En la gráfica de Dispersión de los residuos podemos observar que hay una tendencia positiva de los Residuos en el periodo t-1 y 
+los residuos en el perido t, por lo cual podemos ver indicios de autocorrelación positiva en los errores.
+
+Sin embargo, utilcemos un criterio numérico que nos permita concluir que de facto si hay correlación en los errores. Utilizaremos el Criterio de **Durbin Watson**.
+
+```{r}
+et <- residuals(Reg)
+
+d <- ((Residuos$X2 - Residuos$X1) %*% (Residuos$X2- Residuos$X1)) / (et %*% et)
+kable(d, col.names = 'Prueba Durbin-Watson')
+```
+
+Se basa en el cálculo de:
+
+\begin{equation}
+  d = \frac{\sum ((e_t-e_{t-1})^2}{\sum e_{t}^2}
+\end{equation}
+
+Para residuos relacionados poristivamente, las diferencias $(e_t-e_{t-1})^2$ tienen que ser pequeñas en relacion con su varianza y esto implica d pequeño.
+En este caso d=.7015
+Por lo tanto, el coeficiente de autocorrelación estimado de primer orden es $\hat\rho= .6492$
+
+Por tablas de la distribución del estadístico d de Durbin-Watson con $k=1$, $n=27$ y $\alpha = .01$  obtenemos $d_l=1.088$ y $d_u=1.233$. Entonces, podemos notar que se cumple que $d<d_l$, pues   $.07<1.088$ y se rechaza $H_o:  \rho=0$  a favor de $Ha:  \rho > 0$. 
+Por lo tanto, existe autocorrelación positiva entre los errores. 
+
+Para corregir el problema de Autocorrelación en los Errores utilizaremos los siguientes métodos: Hidreth - Lu.
+
+### Hidrleth - Lu
+
+```{r}
+rho <- seq(-1,1,0.001)
+SS1 <- 100000000
+
+for (i in 1:length(rho)){
+  aux <- hildreth.lu(Datos$y, Datos$x, rho[i])
+  SS <- residuals(aux) %*% residuals(aux)
+  
+  if (SS < SS1){
+    Buena <- aux  
+    rho1 <- rho[i]
+    SS1 <- SS
+    }
+}
+```
+
+Escogemos $\rho = .72$ de tal manera que la SCR es miníma. De esta forma obtenemos el modelo siguiente usando el método de Hildreth - Lu. 
+
+```{r fig.height=4, fig.width=5,fig.align='center'}
+sum1 <- summary(Buena)
+kable(sum1$coefficients)
+
+Residuos1 <- data.frame(X1 = residuals(Buena)[-1], X2 = residuals(Buena)[-26])
+et1 <- residuals(Buena)
+
+plot(Residuos1$X1, Residuos1$X2, xlab = 'Residuos t-1', ylab = 'Residuos t', pch = 19, cex = .5, main = 'Dispersión de los Resiudos')
+abline(h =0)
+abline(v =0)
+
+d1 <- ((Residuos1$X2 - Residuos1$X1) %*% (Residuos1$X2- Residuos1$X1)) / (et1 %*% et1)
+kable(d1, col.names = 'Prueba Durbin-Watson')
+
+```
+
+En el diagrama de dispersión de los resiudos podemos observar que no hay una tendencia definida por lo cual no podemos observar indicios de correlación en los errores a partir de dicha gráfica. Usando la prueba de Durbin Watson podemos ver que $d_u<d = 1.6918 < 4 -d_u$ donde $d_u = 1.233$. 
+Queda corregido el modelo y no se violará el supuesto de no correlación en los errores. 
+
+## Desviaciones estandar de $b_o$ y $b_1$ antes y después de la correción del Modelo
+
+```{r}
+desv <- data.frame(sum$coefficients [,2], sum1$coefficients [,2])
+kable(desv, col.names = c('Antes H-L', 'Despues H-L'))
+```
+
+Podemos observar que la desviación estándar de $b_o$ disminuye mientras que la desviación estandar de $b_1$ aumenta. 
+
+Es de notar que si hacemos la prueba de hipótesis $H_0: \beta_1 = 0 \;\;vs \;\; H_1: \beta_1 \neq 0$

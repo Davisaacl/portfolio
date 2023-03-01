@@ -1,0 +1,310 @@
+---
+title: "Pregunta 2"
+author: "David López"
+date: "26/9/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+## R Markdown
+
+Inciso a)
+
+```{r}
+
+b0 <- NULL
+b1 <- NULL
+
+b0 <- 1
+b1 <- 1
+funct1a <- function(x){1 + b0 - b1 + b1*x}
+
+plot(funct1a,from=-1,to=10,ylim=c(-1,10),col="red")
+par(new=TRUE)
+
+
+
+b0 <- 0
+b1 <- 1
+funct1b <- function(x){1+b0-b1 + b1*x}
+
+plot(funct1b,from=-1,to=10,ylim=c(-1,10),col="blue")
+par(new=TRUE)
+
+
+
+b0 <- -1
+b1 <- 1
+funct1c <- function(x){1+b0-b1 + b1*x}
+
+plot(funct1c,from=-1,to=10,ylim=c(-1,10),col="green")
+par(new=TRUE)
+
+```
+Ahora variamos valores de $\beta_1$ y dejamos fijo a $\beta_0$
+
+```{r}
+
+b0 <- NULL
+b1 <- NULL
+
+b0 <- 1
+b1 <- 1
+funct1a <- function(x){1 + b0 - b1 + b1*x}
+
+plot(funct1a,from=-1,to=10,ylim=c(-6,10),col="red")
+par(new=TRUE)
+
+
+
+b0 <- 1
+b1 <- 0
+funct1b <- function(x){1+b0-b1 + b1*x}
+
+plot(funct1b,from=-1,to=10,ylim=c(-6,10),col="blue")
+par(new=TRUE)
+
+
+
+b0 <- 1
+b1 <- -1
+funct1c <- function(x){1+b0-b1 + b1*x}
+
+plot(funct1c,from=-1,to=10,ylim=c(-6,10),col="green")
+par(new=TRUE)
+
+```
+
+
+Inciso b)
+
+```{r}
+b0 <- 1
+b1 <- 1
+funct2a <- function(x) {exp(b0) * x^(b1)}
+plot(funct2a, from = 0, to = 2, ylim=c(0,8), col="red")
+par(new=TRUE)
+
+
+b0 <- -1
+b1 <- 1
+funct2b <- function(x){exp(b0)*x^{b1}}
+plot(funct2b, from = 0, to = 2, ylim=c(0,8), col = "blue")
+par(new=TRUE)
+
+
+
+b0 <- 1
+b1 <- 2
+funct2c <- function(x){exp(b0)*x^{b1}}
+plot(funct2c, from = 0, to = 2, ylim=c(0,8), col = "green")
+par(new=TRUE)
+
+b0 <- -1
+b1 <- 2
+funct2d <- function(x){exp(b0)*x^{b1}}
+plot(funct2c, from = 0, to = 2, ylim=c(0,8), col = "orange")
+par(new=TRUE)
+
+b0 <- 1
+b1 <- -1
+funct2e <- function(x){exp(b0)*x^{b1}}
+plot(funct2c, from = 0, to = 2, ylim=c(0,8), col = "purple")
+par(new=TRUE)
+
+b0 <- -1
+b1 <- -1
+funct2f <- function(x){exp(b0)*x^{b1}}
+plot(funct2c, from = 0, to = 2, ylim=c(0,8), col = "yellow")
+par(new=TRUE)
+
+```
+
+
+
+
+Inciso c)
+
+```{r}
+b0 <- 1
+b1 <- 1
+funct3a <- function(x) {1+b0+b1 *log(x)}
+plot(funct3a, from = 0, to = 2, ylim=c(-4,4), col="red")
+par(new=TRUE)
+
+
+
+b0 <- -1
+b1 <- 1
+funct3b <- function(x){1+b0+b1 *log(x)}
+plot(funct3b, from = 0, to = 2, ylim=c(-4,4), col = "blue")
+par(new=TRUE)
+
+
+
+b0 <- 1
+b1 <- 2
+funct3c <- function(x){1+b0+b1 *log(x)}
+plot(funct3c, from = 0, to = 2, ylim=c(-4,4), col = "green")
+par(new=TRUE)
+
+b0 <- -1
+b1 <- 2
+funct3d <- function(x){1+b0+b1 *log(x)}
+plot(funct3d, from = 0, to = 2, ylim=c(-4,4), col = "orange")
+par(new=TRUE)
+
+b0 <- 1
+b1 <- -1
+funct3e <- function(x){1+b0+b1 *log(x)}
+plot(funct3e, from = 0, to = 2, ylim=c(-4,4), col = "purple")
+par(new=TRUE)
+
+b0 <- 1
+b1 <- 0
+funct3f <- function(x){1+b0+b1 *log(x)}
+plot(funct3f, from = 0, to = 2, ylim=c(-4,4), col = "yellow")
+par(new=TRUE)
+
+```
+
+Inciso d)
+```{r}
+b0 <- 1
+b1 <- 1
+funct4a <- function(x) {1+b0-b1 - (b1/x)}
+plot(funct4a, from = 0, to = 2, ylim=c(-20,10), col="red")
+par(new=TRUE)
+
+
+
+b0 <- -1
+b1 <- 1
+funct4b <- function(x){1+b0-b1 - (b1/x)}
+plot(funct4b, from = 0, to = 2, ylim=c(-20,10), col = "blue")
+par(new=TRUE)
+
+
+
+b0 <- 1
+b1 <- 2
+funct4c <- function(x){1+b0-b1 - (b1/x)}
+plot(funct4c, from = 0, to = 2, ylim=c(-20,10), col = "green")
+par(new=TRUE)
+
+b0 <- -1
+b1 <- 2
+funct4d <- function(x){1+b0-b1 - (b1/x)}
+plot(funct4d, from = 0, to = 2, ylim=c(-20,10), col = "orange")
+par(new=TRUE)
+
+b0 <- 1
+b1 <- -1
+funct4e <- function(x){1+b0-b1 - (b1/x)}
+plot(funct4e, from = 0, to = 2, ylim=c(-20,10), col = "purple")
+par(new=TRUE)
+
+b0 <- 1
+b1 <- -1
+funct4f <- function(x){1+b0-b1 - (b1/x)}
+plot(funct4f, from = 0, to = 2, ylim=c(-20,10), col = "yellow")
+par(new=TRUE)
+
+b0 <- 1
+b1 <- 0
+funct4g <- function(x){1+b0-b1 - (b1/x)}
+plot(funct4g, from = 0, to = 2, ylim=c(-20,10), col = "pink")
+par(new=TRUE)
+
+```
+
+
+Inciso e)
+```{r}
+b0 <- 1
+b1 <- 1
+funct5a <- function(x) {exp(b0-b1) * exp(b1*x)}
+plot(funct5a, from = 0, to = 2, ylim=c(0,8), col="red")
+par(new=TRUE)
+
+
+
+b0 <- -1
+b1 <- 1
+funct5b <- function(x){exp(b0-b1) * exp(b1*x)}
+plot(funct5b, from = 0, to = 2, ylim=c(0,8), col = "blue")
+par(new=TRUE)
+
+
+
+b0 <- 1
+b1 <- 2
+funct5c <- function(x){exp(b0-b1) * exp(b1*x)}
+plot(funct5c, from = 0, to = 2, ylim=c(0,8), col = "green")
+par(new=TRUE)
+
+b0 <- -1
+b1 <- 2
+funct5d <- function(x){exp(b0-b1) * exp(b1*x)}
+plot(funct5d, from = 0, to = 2, ylim=c(0,8), col = "orange")
+par(new=TRUE)
+
+
+b0 <- 1
+b1 <- -1
+funct5e <- function(x){exp(b0-b1) * exp(b1*x)}
+plot(funct5e, from = 0, to = 2, ylim=c(0,8), col = "purple")
+par(new=TRUE)
+
+b0 <- -1
+b1 <- -1
+funct5f <- function(x){exp(b0-b1) * exp(b1*x)}
+plot(funct5f, from = 0, to = 2, ylim=c(0,8), col = "yellow")
+par(new=TRUE)
+
+b0 <- 1
+b1 <- 0
+funct5g <- function(x){exp(b0-b1) * exp(b1*x)}
+plot(funct5g, from = 0, to = 2, ylim=c(0,8), col = "pink")
+par(new=TRUE)
+
+```
+
+Inciso f)
+```{r}
+b0 <- 0.5
+b1 <- 1
+funct6a <- function(x) {exp(b0-b1) * exp(-b1/x)}
+plot(funct6a, from = 0, to = 2, ylim=c(0,10), col="red")
+par(new=TRUE)
+
+
+
+b0 <- -0.5
+b1 <- 1
+funct6b <- function(x){exp(b0-b1) * exp(-b1/x)}
+plot(funct6b, from = 0, to = 2, ylim=c(0,10), col = "blue")
+par(new=TRUE)
+
+
+
+b0 <- 0.5
+b1 <- -1
+funct6c <- function(x){exp(b0-b1) * exp(-b1/x)}
+plot(funct6c, from = 0, to = 2, ylim=c(0,10), col = "green")
+par(new=TRUE)
+
+b0 <- -0.5
+b1 <- -1
+funct6d <- function(x){exp(b0-b1) * exp(-b1/x)}
+plot(funct6d, from = 0, to = 2, ylim=c(0,10), col = "orange")
+par(new=TRUE)
+
+b0 <- 1
+b1 <- 0
+funct6e <- function(x){exp(b0-b1) * exp(-b1/x)}
+plot(funct6e, from = 0, to = 2, ylim=c(0,10), col = "purple")
+par(new=TRUE)
+
+```
