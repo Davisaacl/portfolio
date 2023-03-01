@@ -7,7 +7,7 @@ package tarea2;
 
 /**
  *
- * @author edi
+ * @author David ISAAC
  */
 public class ArrayStack <T> implements StackADT<T>{
     private T[] datos;
@@ -60,5 +60,14 @@ public class ArrayStack <T> implements StackADT<T>{
     public boolean isEmpty(){
         return top==0;
     }
+
+    public T getTop(){
+    	return datos[top-1];
+    }
+
+    public int getPilaLenght(){
+    	return datos.length;
+    }
+
     
 }

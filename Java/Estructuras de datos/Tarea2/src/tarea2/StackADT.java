@@ -7,7 +7,7 @@ package tarea2;
 
 /**
  *
- * @author edi
+ * @author David ISAAC
  */
 public interface StackADT <T>{
     public void push(T dato);

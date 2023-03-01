@@ -7,7 +7,7 @@ package tarea2;
 
 /**
  *
- * @author edi
+ * @author David ISAAC
  */
 public class EmptyCollectionException extends RuntimeException{
     

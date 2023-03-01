@@ -7,22 +7,38 @@ package tarea2;
 
 /**
  *
- * @author edi
+ * @author David ISAAC
  */
 public class ArrayStackLimitada <T> extends ArrayStack<T>{
     private int capacidad;
-
-    public ArrayStackLimitada() {
-    }
-
+    private int ocupados;
+    
     public ArrayStackLimitada(int capacidad) {
-        super(capacidad);
+        this.capacidad = capacidad;
+        ocupados = 0;
+
     }
     
-    public T push (T dato){
-        if(top==capacidad)
-            throw FullCollectionException();
-        
+    public void push(T dato){
+        if (ocupados<capacidad){
+            super.push(dato);
+            ocupados++;
+        }
     }
     
+    public T pop(){
+        ocupados--;
+        return super.pop();
+    }
+    
+    public boolean isFull(){
+        boolean res = false;
+        if(ocupados==capacidad)
+            res = true;
+        return res;
+    }
+
+
 }
+
+
