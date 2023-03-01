@@ -1,0 +1,106 @@
+---
+title: "Ejemplo MCMC"
+author: "Jorge de la Vega"
+date: "29 de octubre de 2020"
+output:
+  html_document: default
+  word_document: default
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, comment = NULL)
+```
+
+## Ejemplo: Aplicación de MCMC a la Criptografía
+
+El siguiente ejemplo se basa en el artículo de Persi Diaconis: ["The Markov chain Monte Carlo revolution"](https://math.uchicago.edu/~shmuel/Network-course-readings/MCMCRev.pdf) *Bulletin of the American Mathematical Society*, 46(2):179-205, 2009. 
+
+### Definición del modelo
+
+Sea $A$ un conjunto que representa un alfabeto con $n$ letras. Por ejemplo, en el inglés se consideran $n=26$ letras más el espacio son 27. Ahora consideremos un mensaje $M_k$ que consta de k letras en $A$. En el español podrían ser 28 o 29.
+
+
+Sea $\sigma: A \to A$ una _permutación_ o _función de codificación_.  Hay $n!$ permutaciones. Para el inglés como se definió arriba hay $27!\approx 10^{28}$ posibles funciones de codificación.
+
+\[ \sigma(c_1,c_2,\ldots,c_n) = (c_{\sigma(1)},c_{\sigma(2)},\ldots,c_{\sigma(n)}).\]
+
+Sea $M_k$ un _mensaje_ conformado por $k$ letras en $A$. El problema a resolver es el siguiente: <font color="blue">si $M_k$ es un mensaje cifrado, encontrar la función $\sigma^*$ que decodifica el mensaje para hacerlo legible</font>.
+
+- Para descifrar el mensaje, se necesita medir de alguna manera la "distancia" entre el mensaje cifrado y el mensaje real. El real no es conocido, por lo que se requiere una medición indirecta. Esta medición puede basarse en la verosimilitud de que ciertas letras aparezcan de manera conjunta. Para estimar esta verosimilitud, se puede usar una muestra del lenguaje común, que típicamente se conoce como _corpus_.
+
+- Dado un corpus asociado al alfabeto $A$, podemos construir una función _score_ (como una especie de 'distancia') de la siguiente manera: sea $O$ la matriz de $(n+1)\times (n+1)$ que registra la frecuencia de transiciones de una letra a otra en el corpus, formando pares de letras. Por ejemplo, si el corpus es: 'abracadabra', entonces $O_{ab}=O_{br}=O_{ra}=2$, $O_{ac}=O_{ca}=1$, etc.
+
+A la función $\sigma$ le podemos asignar el score:
+
+\[ score(\sigma) = \prod_{i=1}^k O_{\sigma(c_i),\sigma(c_{i+1})} \]
+
+- La función score para el mensaje $M_k$ lo definimos como el producto sobre todas las frecuencias de los pares sucesivos de letras $(\sigma(c_i),\sigma(c_{i+1}))$ en el texto descifrado con la $\sigma$ particular.
+
+- Este score es mayor cuando frecuencias de pares sucesivos en el mensaje corresponden con aquellos que aparecen más frecuentemente  en el texto de referencia. Entonces, *codificaciones con altos scores son las candidatas para descodificar*. El objetivo es encontrar la $\sigma^*$ con score máximo.
+
+A continuación, se considera un corpus basado en la obra completa de Jane Austen que se encuentra disponible en el Proyecto Gutenberg y de la que se calcula la matriz de transiciones $O$. 
+
+```{r}
+set.seed(123) #fija una semilla para reproducir el ejercicio.
+
+# La siguiente matriz está basada en la obra de Jean Austen y cuenta las transiciones 
+# encontradas entre letras consecutivas (idioma inglés)
+
+mat <- read.table("https://piazza.com/class_profile/get_resource/jkr974no7yz4gb/jnlnpa3pp731y0", 
+                  header=F)
+```
+
+Podemos definir una distribución de probabilidad que sea proporcional al score sobre el espacio de permutaciones, y el problema de Montecarlo consiste en muestrear de esta distribución: 
+
+\[\pi_{\sigma} = \frac{eval(\sigma)}{\sum_{\psi\in \mathcal{C}}eval(\psi)}\]
+
+Noten que el denominador de esta densidad no se puede calcular, pues es la suma de $n!$ componentes. Pero para aplicar el algoritmo de Metropolis-Hastings sólo basta conocer los cocientes de la forma $\pi_{\sigma}/\pi_{\psi} = score(\sigma)/score(\psi)$.
+
+```{r}
+
+```
+
+### Elección del kernel de transición
+
+Podemos ejecutar una caminata aleatoria en el conjunto de permutaciones de la siguiente manera: 
+
+Dada una permutación $\sigma$, la transición a una permutación propuesta $\sigma^*$ se da tomando dos letras al azar y cambiando los valores que $\sigma$ asigna a esas letras. Con este método de transposiciones aleatorias, se contruye un kernel de transición simétrico, obteniendo como cociente de Hastings la siguiente expresión:
+
+\[ \alpha(\sigma,\sigma^*)= \frac{\pi_{\sigma^*} q(\sigma^*|\sigma)}{\pi_{\sigma}q(\sigma|\sigma^*)} = \frac{score(\sigma^*)}{score(\sigma)} \]
+
+
+### Algoritmo
+
+Para hacer las búsquedas de los pares en la matriz $O$ se indexan a través de sus códigos ASCII, para lo que se usan dos funciones: `ascii` y `charIndex`.
+
+```{r}
+
+```
+
+Las evaluaciones ya hechas se van guardando en una lista de `environments` para no tener que recalcularlas cada vez. 
+
+### Ejemplo
+
+Consideremos el siguiente mensaje. Para simplificar, se han eliminado los signos de puntuación y la diferencia entre minúsculas y mayúsculas:
+
+**coincidences in general are great stumbling blocks in the way of that class of thinkers who have been educated to know nothing of the theory of probabilities that theory to which the most glorious objects of human research are indebted for the most glorious of illustrations edgar allen poe the murders in the rue morgue morpheus this is your last chance after this there is no turning back you take the blue pill the story ends you wake up in your bed and believe whatever you want to believe you take the red pill you stay in wonderland and i show you how deep the rabbit hole goes**
+
+
+```{r}
+#Este es el mensaje codificado. Hay que descodificarlo
+
+```
+
+Entonces la simulación queda del siguiente modo:
+
+```{r}
+
+```
+
+
+
+
+
+

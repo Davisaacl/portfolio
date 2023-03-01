@@ -1,0 +1,195 @@
+---
+title: "Ejemplos MCMC Software: JAGS & stan"
+author: "ITAM"
+date: "11/11/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Ejemplo de modelación bayesiana con JAGS y stan
+
+Aquí veremos un ejemplo de inferencia bayesiana usando sólo `jags` y `stan`. Si tienen problemas para instalar `jags`, pueden seguir las instrucciones de John Kruschke que se encuentran en [la siguiente liga](https://sites.google.com/site/doingbayesiandataanalysis/software-installation).
+
+Para iniciar, consideremos un ejemplo sencillo. Supongamos un modelo donde 
+\begin{eqnarray} 
+y|\theta &\sim & Ber(\theta) \\
+ \theta &\sim & Beta(a,b) \\
+\end{eqnarray}
+
+donde $a$ y $b$ son determinadas en función de las creencias iniciales. por ejemplo, podemos suponer una distribución $ Beta(1,1)$, que es la distribución uniforme en el intervalo (0,1). Los datos observados estan en el archivo `z15N50.csv` en Piazza.
+
+Los pasos que se seguirán en los dos casos son los siguientes:
+
+1. Carga de datos
+2. Especifica modelo
+3. Inicializa las cadenas
+4. Genera las cadenas
+5. Examina las cadenas
+
+## JAGS
+
+### Datos
+
+Para JAGS los datos necesitan estar en una estructura de lista
+
+```{r}
+library(rjags)
+library(runjags)
+ruta <- "~/Dropbox/Academia/ITAM/2020-II/Sim_S20-II/"
+datos <- read.csv(paste0(ruta,"data/z15N50.csv"))
+datalist <- list(y = datos$y, n =length(datos$y))
+```
+
+### Modelo
+
+
+```{r}
+modelo = "
+model {
+  for (i in 1:n ) {
+    y[i] ~ dbern(theta) # verosimilitud
+  }
+  theta ~ dbeta(1,1) # inicial; dbeta(1,1) es la distribución uniforme
+}
+" 
+writeLines(modelo, con = "TEMPmodel.txt") # Escribe el modelo a una conexión temporal
+```
+
+### Inicialización de cadenas
+
+`JAGS` puede inicializar con valores aleatorios, pero la eficiencia de MCMC se puede mejorar a veces con valores iniciales escogidos adecuadamente a `JAGS`. Para esto es necesario saber cómo introducirlos al programa.Usualmente los valores iniciales se pasan en formato de lista.
+
+Un método útil para escoger valores iniciales de los parámetros es usar el estimador máximo verosímil.
+
+```{r}
+theta0 <- sum(datalist$y)/datalist$n
+# si hay más parámetros, cada uno se incluye como un elemento en la lista
+inits <- list(theta = theta0) 
+```
+
+Cuando hay múltiples cadenas, los valores iniciales se pueden especificar  para cada cadena, y hay tres maneras de hacerlo:
+
+1. Especificar un sólo punto inicial para los parámetros, como arriba
+2. Especificando una lista de listas, con tantas sublistas como cadenas haya. 
+3. Definir una función que regrese los valores iniciales cuando se le llame a esa función.Podemos por ejemplo, inicializar cada cadena en puntos al azar cercanos al MLE, como se muestra a continuación
+
+```{r}
+inits2 <- function(){
+  muestray <- sample(datalist$y, replace = T)
+  theta0 <- sum(muestray)/length(muestray)
+  return(list(theta=ifelse(theta0 %in% c(0,1),0.5,theta0))) # elimina valores extremos
+}
+```
+
+### Genera las cadenas 
+
+Ahora ejecutamos el modelo. Se parece a lo que ya hicimos antes con `BUGS`.
+
+```{r}
+# crea el modelo
+modelo.con.jags <- jags.model(file = "TEMPmodel.txt", 
+                              data = datalist, 
+                              inits = inits2, 
+                              n.chains = 5,
+                              n.adapt = 500)
+# genera las cadenas
+update(modelo.con.jags, n.iter = 500)
+```
+
+Para generar las muestras MCMC que representan la distribución posterior, se usa la siguiente función. Es importante especificar los nombres de las variables porque son las únicas que monitorea el programa cuando se ejecuta.
+
+```{r}
+posterior <- coda.samples(modelo.con.jags, variable.names = c("theta"), n.iter = 5000)
+```
+
+el resultado de la posterior es una lista con las cadenas generadas
+
+## Examina las cadenas
+
+```{r}
+# Diagnósticos de convergencia
+coda::traceplot(posterior)
+coda::gelman.plot(posterior)
+```
+
+
+Hay algunas funciones auxiliares desarrolladas por Kruschke que se encuentran en el archivo `DBDA2E-utilities.R`, que facilitan la interpretación de los resultados de salida. Al cargar el archivo, puede querer instalar algunos programas adicionales
+
+```{r}
+source(paste0(ruta,"data/DBDA2E-utilities.R"))
+```
+
+Usando las funciones del archivo de funciones auxiliares para diagnóstico:
+
+```{r}
+diagMCMC(codaObject = posterior, parName = "theta")
+
+# datos descriptivos de la distribución psterior:
+openGraph(height = 3, width = 4)
+par(mar = c(3.5,0.5,2.5,0.5), mgp=c(2.25,0.7,0) )
+plotPost( posterior[,"theta"], main = "theta" , xlab = bquote(theta) )
+
+# Hace la gráfica con otras anotaciones
+plotPost(posterior[,"theta"], main = "theta" , xlab = bquote(theta), 
+         cenTend = "median", # medida de tendencia central a utilizar "median", "mode", "mean"
+         compVal = 0.5, # especifica un valor de comparación y se fija en el % de obs.
+         ROPE = c(0.45,0.55), # límites de la región de equivalencia práctica.
+         credMass = 0.90) #  masa del intervalo de alta densidad
+```
+
+
+
+## Stan
+
+Paquetes necesarios para correr Stan:
+
+1. R
+2. RStudio (no esencial)
+3. Toolchain, a través de Rtools en Windows o Mac
+4. rstan
+
+Stan permite determinar cuántos cores tiene su CPU
+
+```{r}
+library(rstan)
+options(mc.cores = parallel::detectCores())
+```
+
+A continuación se escribe el código del programa que hicimos con `jags`:
+
+```{r}
+programa1 = "
+data {
+  int Y[50]; // valores observados
+}
+parameters {
+  real<lower=0> theta; // probabilidad
+}
+model {
+  for(i in 1:50) {
+    Y[i] ~ bernoulli(theta); // verosimilitud
+  }
+  theta ~ beta(1,1); // inicial para theta
+}
+" 
+writeLines(programa1, con = "TEMPmodel.stan") # Escribe el modelo a una conexión temporal
+```
+
+```{r}
+ajuste <- stan('TEMPmodel.stan', iter=5000, chains=10, warmup=1000, data = list(Y=datalist$y))
+th <- rstan::extract(ajuste,'theta')[[1]]  
+qplot(th, bins=200)
+```
+
+Podemos usar `shinystan` para tener un mejor análisis
+
+```{r}
+library(shinystan)
+fit <- as.shinystan(ajuste)
+launch_shinystan(fit)
+```
+
+Una buena referencia para estudiar Stan sobre aplicación de modelos es es libro de Ben Lambert: *A Student's guide to Bayesian Statistics*.
