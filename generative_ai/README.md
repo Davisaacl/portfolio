@@ -1,1 +1,1 @@
-Generativr AI projects
+Generative AI projects
