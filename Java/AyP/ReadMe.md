@@ -1,1 +1,0 @@
-Proyectos Algoritmos y Programas
