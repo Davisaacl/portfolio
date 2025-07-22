@@ -1,1 +1,0 @@
-Esatadística Aplicada II

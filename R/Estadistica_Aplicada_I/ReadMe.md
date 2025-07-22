@@ -1,1 +1,0 @@
-Estadística Aplicada I
